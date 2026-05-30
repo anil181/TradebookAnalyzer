@@ -1,6 +1,6 @@
-# Tradebook Analyzer
+# Zerodha Tradebook Analyzer
 
-A reusable, browser-based FIFO tradebook analyzer for Zerodha-style equity tradebook `.xlsx` files.
+A reusable, browser-based FIFO tradebook analyzer for Zerodha-style equity tradebook `.xlsx` files. You need to go to https://console.zerodha.com/reports/tradebook. Select a date range for which you want to analyze your trades, download in xlsx format.
 
 ## Run
 
@@ -8,7 +8,7 @@ A reusable, browser-based FIFO tradebook analyzer for Zerodha-style equity trade
 npm run start
 ```
 
-Open `http://localhost:4173`, upload a broker tradebook, and the app will parse closed long trades using strict FIFO matching. The visible closed-trades table groups FIFO fragments by ticker, buy date, and sell date with weighted average buy/sell prices.
+Open `http://localhost:4173`, upload the downloaded tradebook, and the app will parse closed long trades using strict FIFO matching. The visible closed-trades table groups FIFO fragments by ticker, buy date, and sell date with weighted average buy/sell prices.
 
 The browser page loads SheetJS and Chart.js from public CDNs, so the first run needs internet access for workbook parsing and charts.
 
