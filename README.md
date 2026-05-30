@@ -1,6 +1,6 @@
-# Tradebook Analyzer
+# Zerodha Tradebook Analyzer
 
-A reusable, browser-based FIFO tradebook analyzer for Zerodha-style equity tradebook `.xlsx` files.
+A browser-based FIFO (First In First Out) tradebook analyzer for Zerodha-style equity tradebook `.xlsx` files. Download the tradebook from https://console.zerodha.com/reports/tradebook in .xlsx for any date range. This file is the input to the tool for further analysis.
 
 ## Run
 
@@ -27,3 +27,8 @@ The browser page loads SheetJS and Chart.js from public CDNs, so the first run n
 - Sells with no available prior buys are reported as unmatched. This can happen if your uploaded date range starts after the original purchase.
 - Calculations currently use trade price and quantity. Broker fees, taxes, and charges are not included unless they appear in the uploaded tradebook as price/quantity effects.
 - Open positions use remaining FIFO buy quantities from the uploaded file. They do not include live market prices, so unrealized P/L is not calculated yet.
+
+## Sample dashboard generated
+<img width="3024" height="5474" alt="Screen Shot 2026-05-30 at 21 22 06" src="https://github.com/user-attachments/assets/6c85ff00-1c4b-4b5b-9535-19c6916de241" />
+
+  
