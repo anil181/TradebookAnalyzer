@@ -15,8 +15,11 @@ const PERCENT = new Intl.NumberFormat("en-IN", {
 const state = {
   charts: {},
   allGroupedTrades: [],
+  allOpenPositions: [],
   displayTrades: [],
+  displayOpenPositions: [],
   sort: { key: "sellDate", direction: "desc" },
+  openSort: { key: "costBasis", direction: "desc" },
   tickerFilter: ""
 };
 
@@ -30,6 +33,9 @@ const elements = {
   coachList: document.querySelector("#coachList"),
   tableBody: document.querySelector("#closedTradesBody"),
   tableCount: document.querySelector("#tableCount"),
+  openTableBody: document.querySelector("#openLotsBody"),
+  openTableCount: document.querySelector("#openLotsCount"),
+  openLotsPanel: document.querySelector("#openLotsPanel"),
   tickerSearch: document.querySelector("#tickerSearch"),
   tickerOptions: document.querySelector("#tickerOptions"),
   clearTicker: document.querySelector("#clearTicker"),
@@ -55,6 +61,18 @@ document.querySelectorAll("[data-sort]").forEach((button) => {
       state.sort = { key, direction: "asc" };
     }
     renderTable();
+  });
+});
+
+document.querySelectorAll("[data-open-sort]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const key = button.dataset.openSort;
+    if (state.openSort.key === key) {
+      state.openSort.direction = state.openSort.direction === "asc" ? "desc" : "asc";
+    } else {
+      state.openSort = { key, direction: "asc" };
+    }
+    renderOpenPositionsTable();
   });
 });
 
@@ -92,25 +110,29 @@ function analyzeRows(rows) {
   const trades = rowsToTrades(rows);
   const analysis = analyzeTrades(trades);
   state.allGroupedTrades = analysis.groupedClosedTrades;
+  state.allOpenPositions = analysis.groupedOpenPositions;
   state.displayTrades = analysis.groupedClosedTrades;
+  state.displayOpenPositions = analysis.groupedOpenPositions;
   state.analysis = analysis;
   state.tickerFilter = "";
   state.sort = { key: "sellDate", direction: "desc" };
+  state.openSort = { key: "costBasis", direction: "desc" };
   elements.tickerSearch.value = "";
   renderAnalysis(analysis);
-  setStatus(`Parsed ${analysis.inputCount} trade rows, matched ${analysis.closedTrades.length} FIFO lots, and grouped them into ${analysis.groupedClosedTrades.length} date-level trades.`);
+  setStatus(`Parsed ${analysis.inputCount} trade rows, matched ${analysis.closedTrades.length} FIFO lots, grouped them into ${analysis.groupedClosedTrades.length} date-level trades, and found ${analysis.groupedOpenPositions.length} open position lots.`);
   return analysis;
 }
 
 function renderAnalysis(analysis) {
   elements.emptyState.hidden = true;
   elements.dashboard.hidden = false;
-  renderTickerOptions(analysis.groupedClosedTrades);
+  renderTickerOptions([...analysis.groupedClosedTrades, ...analysis.groupedOpenPositions]);
   renderMetrics(analysis.metrics);
   renderWarnings(analysis.warnings);
   renderCharts(analysis.series);
   renderCoach(analysis.insights);
   renderTable();
+  renderOpenPositionsTable();
 }
 
 function applyTickerFilter() {
@@ -118,6 +140,9 @@ function applyTickerFilter() {
   state.displayTrades = query
     ? state.allGroupedTrades.filter((trade) => trade.symbol.includes(query))
     : state.allGroupedTrades;
+  state.displayOpenPositions = query
+    ? state.allOpenPositions.filter((position) => position.symbol.includes(query))
+    : state.allOpenPositions;
 
   const summary = summarizeClosedTrades(state.displayTrades);
   renderMetrics(summary.metrics);
@@ -125,10 +150,11 @@ function applyTickerFilter() {
   renderCoach(summary.insights);
   renderFilterSummary();
   renderTable();
+  renderOpenPositionsTable();
 }
 
-function renderTickerOptions(trades) {
-  const tickers = [...new Set(trades.map((trade) => trade.symbol))].sort();
+function renderTickerOptions(items) {
+  const tickers = [...new Set(items.map((item) => item.symbol))].sort();
   elements.tickerOptions.innerHTML = tickers
     .map((ticker) => `<option value="${escapeHtml(ticker)}"></option>`)
     .join("");
@@ -139,9 +165,11 @@ function renderFilterSummary() {
   const query = state.tickerFilter;
   const shown = state.displayTrades.length;
   const total = state.allGroupedTrades.length;
+  const shownOpen = state.displayOpenPositions.length;
+  const totalOpen = state.allOpenPositions.length;
   elements.filterSummary.textContent = query
-    ? `${shown} of ${total} grouped trades match "${query}"`
-    : `${total} grouped date-level trades`;
+    ? `${shown} of ${total} grouped closed trades and ${shownOpen} of ${totalOpen} open lots match "${query}"`
+    : `${total} grouped closed trades and ${totalOpen} open lots`;
   elements.clearTicker.disabled = !query;
 }
 
@@ -280,6 +308,28 @@ function renderTable() {
           <td class="numeric">${trade.holdDays.toFixed(1)}</td>
           <td class="numeric">${PERCENT.format(trade.roi)}</td>
           <td class="numeric ${pnlClass}">${INR.format(trade.netProfit)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderOpenPositionsTable() {
+  const sorted = [...state.displayOpenPositions].sort((a, b) => compareTrade(a, b, state.openSort));
+  const totalCost = sorted.reduce((total, position) => total + position.costBasis, 0);
+  const totalQty = sorted.reduce((total, position) => total + position.quantity, 0);
+  elements.openLotsPanel.hidden = state.allOpenPositions.length === 0;
+  elements.openTableCount.textContent = `${sorted.length} open lot${sorted.length === 1 ? "" : "s"} • ${totalQty.toFixed(2)} shares • ${INR.format(totalCost)} cost`;
+  elements.openTableBody.innerHTML = sorted
+    .map((position) => {
+      return `
+        <tr>
+          <td>${escapeHtml(position.symbol)}</td>
+          <td>${formatDate(position.buyDate)}</td>
+          <td class="numeric">${position.quantity.toFixed(2)}</td>
+          <td class="numeric">${INR.format(position.averageBuyPrice)}</td>
+          <td class="numeric">${INR.format(position.costBasis)}</td>
+          <td class="numeric">${position.ageDays.toFixed(1)}</td>
         </tr>
       `;
     })

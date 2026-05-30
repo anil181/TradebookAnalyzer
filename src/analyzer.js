@@ -182,15 +182,51 @@ export function analyzeTrades(inputTrades) {
 
   const openPositions = [...openLots.values()].flat().filter((lot) => lot.remaining > 1e-9);
   const groupedClosedTrades = groupClosedTradesByDate(closedTrades);
+  const groupedOpenPositions = groupOpenPositionsByDate(openPositions, trades.at(-1)?.tradeDate || new Date());
   return {
     closedTrades,
     groupedClosedTrades,
+    groupedOpenPositions,
     ...summarizeClosedTrades(groupedClosedTrades),
     warnings: buildWarnings(unmatchedSells, openPositions),
     inputCount: trades.length,
     unmatchedSells,
     openPositions
   };
+}
+
+export function groupOpenPositionsByDate(openPositions, asOfDate = new Date()) {
+  const groups = new Map();
+
+  for (const lot of openPositions) {
+    const key = [lot.symbol, formatDate(lot.date)].join("|");
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        symbol: lot.symbol,
+        buyDate: lot.date,
+        quantity: 0,
+        costBasis: 0,
+        sourceLots: 0
+      });
+    }
+
+    const group = groups.get(key);
+    group.quantity += lot.remaining;
+    group.costBasis += lot.remaining * lot.price;
+    group.sourceLots += 1;
+  }
+
+  return [...groups.values()]
+    .map((position) => ({
+      ...position,
+      averageBuyPrice: position.quantity ? position.costBasis / position.quantity : 0,
+      ageDays: Math.max(0, Math.round(((asOfDate.valueOf() - position.buyDate.valueOf()) / MS_PER_DAY) * 100) / 100)
+    }))
+    .sort((a, b) => {
+      if (a.symbol !== b.symbol) return a.symbol.localeCompare(b.symbol);
+      return a.buyDate - b.buyDate;
+    });
 }
 
 export function summarizeClosedTrades(closedTrades) {

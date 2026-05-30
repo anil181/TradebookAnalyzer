@@ -30,6 +30,10 @@ input {
   font: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .app-shell {
   width: min(1440px, 100%);
   margin: 0 auto;
@@ -231,6 +235,11 @@ input {
   font-size: 0.88rem;
 }
 
+.panel-note {
+  max-width: 280px;
+  text-align: right;
+}
+
 .table-head {
   align-items: flex-end;
   padding: 16px 16px 0;
@@ -323,10 +332,18 @@ input {
   max-height: 560px;
 }
 
+.compact-scroll {
+  max-height: 360px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   min-width: 1040px;
+}
+
+.portfolio-table {
+  min-width: 760px;
 }
 
 th,
@@ -402,6 +419,10 @@ th button {
   .table-tools {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .panel-note {
+    text-align: left;
   }
 
   .metrics-grid,

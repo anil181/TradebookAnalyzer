@@ -27,6 +27,10 @@ assert.equal(analysis.metrics.netProfit, 320);
 assert.equal(analysis.unmatchedSells.length, 1);
 assert.equal(analysis.openPositions.length, 1);
 assert.equal(analysis.openPositions[0].remaining, 3);
+assert.equal(analysis.groupedOpenPositions.length, 1);
+assert.equal(analysis.groupedOpenPositions[0].symbol, "AAA");
+assert.equal(analysis.groupedOpenPositions[0].quantity, 3);
+assert.equal(analysis.groupedOpenPositions[0].averageBuyPrice, 120);
 assert.equal(formatDate(analysis.closedTrades[0].buyDate), "2026-01-01");
 
 const fragmentRows = [

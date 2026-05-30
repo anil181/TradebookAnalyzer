@@ -75,6 +75,32 @@
           <ul id="coachList"></ul>
         </section>
 
+        <section id="openLotsPanel" class="table-panel" hidden>
+          <div class="panel-head table-head">
+            <div>
+              <h2>Open FIFO Lots</h2>
+              <span id="openLotsCount">0 open lots</span>
+            </div>
+            <span class="panel-note">Current portfolio snapshot at cost basis</span>
+          </div>
+          <div class="filter-summary">Open positions come only from remaining BUY lots after FIFO sell matching.</div>
+          <div class="table-scroll compact-scroll">
+            <table class="portfolio-table">
+              <thead>
+                <tr>
+                  <th><button data-open-sort="symbol" type="button">Ticker</button></th>
+                  <th><button data-open-sort="buyDate" type="button">Buy Date</button></th>
+                  <th class="numeric"><button data-open-sort="quantity" type="button">Open Qty</button></th>
+                  <th class="numeric"><button data-open-sort="averageBuyPrice" type="button">Avg Buy</button></th>
+                  <th class="numeric"><button data-open-sort="costBasis" type="button">Cost Basis</button></th>
+                  <th class="numeric"><button data-open-sort="ageDays" type="button">Age Days</button></th>
+                </tr>
+              </thead>
+              <tbody id="openLotsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="table-panel">
           <div class="panel-head table-head">
             <div>
