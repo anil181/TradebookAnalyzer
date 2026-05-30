@@ -1,6 +1,6 @@
 # Tradebook Analyzer
 
-A reusable, browser-based FIFO tradebook analyzer for Zerodha-style equity tradebook `.xlsx` files. Download the tradebook from https://console.zerodha.com/reports/tradebook in .xlsx for any date range. This file is the input to the tool for further analysis.
+A browser-based FIFO (First In First Out) tradebook analyzer for Zerodha-style equity tradebook `.xlsx` files. Download the tradebook from https://console.zerodha.com/reports/tradebook in .xlsx for any date range. This file is the input to the tool for further analysis.
 
 ## Run
 
