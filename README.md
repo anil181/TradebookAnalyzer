@@ -25,3 +25,6 @@ The browser page loads SheetJS and Chart.js from public CDNs, so the first run n
 - Closed trades are calculated only when a sell can be matched against prior buys for the same ticker.
 - Sells with no available prior buys are reported as unmatched. This can happen if your uploaded date range starts after the original purchase.
 - Calculations currently use trade price and quantity. Broker fees, taxes, and charges are not included unless they appear in the uploaded tradebook as price/quantity effects.
+
+## Sample dashboard after analysis
+<img width="3024" height="4560" alt="Screen Shot 2026-05-30 at 17 23 47" src="https://github.com/user-attachments/assets/9a551173-e80a-4c26-b70e-1358588317ae" />
