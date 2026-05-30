@@ -39,6 +39,7 @@ const elements = {
   tickerSearch: document.querySelector("#tickerSearch"),
   tickerOptions: document.querySelector("#tickerOptions"),
   clearTicker: document.querySelector("#clearTicker"),
+  downloadClosedCsv: document.querySelector("#downloadClosedCsv"),
   filterSummary: document.querySelector("#filterSummary"),
   emptyState: document.querySelector("#emptyState"),
   dashboard: document.querySelector("#dashboard")
@@ -85,6 +86,10 @@ elements.clearTicker.addEventListener("click", () => {
   elements.tickerSearch.value = "";
   state.tickerFilter = "";
   applyTickerFilter();
+});
+
+elements.downloadClosedCsv.addEventListener("click", () => {
+  downloadClosedTradesCsv();
 });
 
 async function handleFile(file) {
@@ -294,6 +299,7 @@ function renderCoach(insights) {
 function renderTable() {
   const sorted = [...state.displayTrades].sort((a, b) => compareTrade(a, b, state.sort));
   elements.tableCount.textContent = `${sorted.length} grouped trade${sorted.length === 1 ? "" : "s"}`;
+  elements.downloadClosedCsv.disabled = sorted.length === 0;
   elements.tableBody.innerHTML = sorted
     .map((trade) => {
       const pnlClass = trade.netProfit >= 0 ? "positive-text" : "negative-text";
@@ -312,6 +318,49 @@ function renderTable() {
       `;
     })
     .join("");
+}
+
+function downloadClosedTradesCsv() {
+  const rows = [...state.displayTrades].sort((a, b) => compareTrade(a, b, state.sort));
+  if (!rows.length) return;
+
+  const headers = [
+    "Ticker",
+    "Buy Date",
+    "Sell Date",
+    "Quantity",
+    "Average Buy Price",
+    "Average Sell Price",
+    "Hold Days",
+    "ROI %",
+    "Net Profit",
+    "Cost Basis",
+    "Proceeds"
+  ];
+  const csvRows = rows.map((trade) => [
+    trade.symbol,
+    formatDate(trade.buyDate),
+    formatDate(trade.sellDate),
+    trade.quantity.toFixed(2),
+    trade.buyPrice.toFixed(2),
+    trade.sellPrice.toFixed(2),
+    trade.holdDays.toFixed(1),
+    (trade.roi * 100).toFixed(2),
+    trade.netProfit.toFixed(2),
+    trade.costBasis.toFixed(2),
+    trade.proceeds.toFixed(2)
+  ]);
+  const csv = [headers, ...csvRows].map((row) => row.map(escapeCsvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const tickerPart = state.tickerFilter ? `-${state.tickerFilter}` : "";
+  link.href = url;
+  link.download = `closed-fifo-round-trips${tickerPart}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function renderOpenPositionsTable() {
@@ -491,4 +540,12 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function escapeCsvCell(value) {
+  const text = String(value ?? "");
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
 }
