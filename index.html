@@ -52,7 +52,7 @@
           <article class="chart-panel">
             <div class="panel-head">
               <h2>P/L By Ticker</h2>
-              <span>Top 12 by closed P/L</span>
+              <span>Top 15 by absolute P/L</span>
             </div>
             <div class="chart-wrap">
               <canvas id="tickerChart"></canvas>
@@ -72,6 +72,16 @@
 
         <section class="coach-panel">
           <h2 id="coachHeadline">Trading Coach</h2>
+          <div class="leaderboards">
+            <article>
+              <h3>🏆 TOP 5 PERFORMERS</h3>
+              <div id="topPerformers" class="rank-list"></div>
+            </article>
+            <article>
+              <h3>⚠️ TOP 5 DRAINS</h3>
+              <div id="topDrains" class="rank-list"></div>
+            </article>
+          </div>
           <ul id="coachList"></ul>
         </section>
 

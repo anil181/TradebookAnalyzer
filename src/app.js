@@ -31,6 +31,8 @@ const elements = {
   warnings: document.querySelector("#warnings"),
   coachHeadline: document.querySelector("#coachHeadline"),
   coachList: document.querySelector("#coachList"),
+  topPerformers: document.querySelector("#topPerformers"),
+  topDrains: document.querySelector("#topDrains"),
   tableBody: document.querySelector("#closedTradesBody"),
   tableCount: document.querySelector("#tableCount"),
   openTableBody: document.querySelector("#openLotsBody"),
@@ -243,7 +245,7 @@ function renderCharts(series) {
 
   const equityLabels = series.equity.map((point) => point.date);
   const equityData = series.equity.map((point) => point.value);
-  const tickerData = series.tickerPnL.slice(0, 12);
+  const tickerData = getTickerPnlByMagnitude(series.tickerPnL, 15);
 
   state.charts.equity = new Chart(document.querySelector("#equityChart"), {
     type: "line",
@@ -272,7 +274,7 @@ function renderCharts(series) {
         backgroundColor: tickerData.map((item) => item.pnl >= 0 ? "#15803d" : "#b91c1c")
       }]
     },
-    options: baseChartOptions({ yCurrency: true })
+    options: horizontalCurrencyChartOptions()
   });
 
   state.charts.histogram = new Chart(document.querySelector("#histogramChart"), {
@@ -291,8 +293,40 @@ function renderCharts(series) {
 
 function renderCoach(insights) {
   elements.coachHeadline.textContent = insights.headline;
+  renderLeaderboards();
   elements.coachList.innerHTML = insights.bullets
     .map((bullet) => `<li>${escapeHtml(bullet)}</li>`)
+    .join("");
+}
+
+function renderLeaderboards() {
+  const byTicker = getTickerSummary(state.displayTrades);
+  const performers = byTicker.filter((item) => item.pnl > 0).sort((a, b) => b.pnl - a.pnl).slice(0, 5);
+  const drains = byTicker.filter((item) => item.pnl < 0).sort((a, b) => a.pnl - b.pnl).slice(0, 5);
+  renderRankList(elements.topPerformers, performers, "positive");
+  renderRankList(elements.topDrains, drains, "negative");
+}
+
+function renderRankList(container, items, tone) {
+  if (!items.length) {
+    container.innerHTML = `<p class="empty-rank">No ${tone === "positive" ? "profitable" : "losing"} tickers in this view.</p>`;
+    return;
+  }
+
+  const maxMagnitude = Math.max(...items.map((item) => Math.abs(item.pnl)), 1);
+  container.innerHTML = items
+    .map((item) => {
+      const width = Math.max(8, (Math.abs(item.pnl) / maxMagnitude) * 100);
+      return `
+        <div class="rank-row">
+          <span>${escapeHtml(item.symbol)}</span>
+          <div class="rank-track">
+            <i class="${tone}" style="width: ${width}%"></i>
+          </div>
+          <strong class="${tone === "positive" ? "positive-text" : "negative-text"}">${INR.format(item.pnl)}</strong>
+        </div>
+      `;
+    })
     .join("");
 }
 
@@ -428,6 +462,34 @@ function baseChartOptions({ yCurrency = false } = {}) {
   };
 }
 
+function horizontalCurrencyChartOptions() {
+  return {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => INR.format(context.parsed.x)
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          callback: (value) => INR.format(value)
+        },
+        grid: { color: "rgba(15, 23, 42, 0.08)" }
+      },
+      y: {
+        ticks: { autoSkip: false },
+        grid: { display: false }
+      }
+    }
+  };
+}
+
 function destroyCharts() {
   Object.values(state.charts).forEach((chart) => chart.destroy?.());
   state.charts = {};
@@ -439,7 +501,7 @@ function renderNativeCharts(series) {
   const histogramCanvas = document.querySelector("#histogramChart");
 
   drawLineChart(equityCanvas, series.equity.map((point) => point.value));
-  drawBarChart(tickerCanvas, series.tickerPnL.slice(0, 12).map((item) => ({
+  drawHorizontalBarChart(tickerCanvas, getTickerPnlByMagnitude(series.tickerPnL, 15).map((item) => ({
     label: item.symbol,
     value: item.pnl,
     color: item.pnl >= 0 ? "#15803d" : "#b91c1c"
@@ -455,6 +517,26 @@ function renderNativeCharts(series) {
       [equityCanvas, tickerCanvas, histogramCanvas].forEach(clearCanvas);
     }
   };
+}
+
+function getTickerPnlByMagnitude(tickerPnL, limit) {
+  return [...tickerPnL]
+    .sort((a, b) => Math.abs(b.pnl) - Math.abs(a.pnl))
+    .slice(0, limit)
+    .sort((a, b) => b.pnl - a.pnl);
+}
+
+function getTickerSummary(trades) {
+  const map = new Map();
+  for (const trade of trades) {
+    if (!map.has(trade.symbol)) {
+      map.set(trade.symbol, { symbol: trade.symbol, pnl: 0, trades: 0 });
+    }
+    const item = map.get(trade.symbol);
+    item.pnl += trade.netProfit;
+    item.trades += 1;
+  }
+  return [...map.values()];
 }
 
 function prepareCanvas(canvas) {
@@ -514,6 +596,36 @@ function drawBarChart(canvas, bars) {
     const y = pad.top + plotHeight - ((bar.value - min) / (max - min)) * plotHeight;
     context.fillStyle = bar.color;
     context.fillRect(x, Math.min(y, zeroY), barWidth, Math.max(1, Math.abs(zeroY - y)));
+  });
+}
+
+function drawHorizontalBarChart(canvas, bars) {
+  const { context, width, height } = prepareCanvas(canvas);
+  const pad = { top: 14, right: 18, bottom: 28, left: 82 };
+  const plotWidth = width - pad.left - pad.right;
+  const plotHeight = height - pad.top - pad.bottom;
+  const values = bars.map((bar) => bar.value);
+  const min = Math.min(0, ...values);
+  const max = Math.max(0, ...values);
+  drawAxes(context, pad, width, height);
+  if (!bars.length || min === max) return;
+
+  const zeroX = pad.left + ((0 - min) / (max - min)) * plotWidth;
+  const gap = 5;
+  const barHeight = Math.max(6, (plotHeight - gap * (bars.length - 1)) / bars.length);
+
+  context.font = "11px sans-serif";
+  context.textAlign = "right";
+  context.textBaseline = "middle";
+  context.fillStyle = "#334155";
+
+  bars.forEach((bar, index) => {
+    const y = pad.top + index * (barHeight + gap);
+    const x = pad.left + ((bar.value - min) / (max - min)) * plotWidth;
+    context.fillStyle = "#334155";
+    context.fillText(bar.label, pad.left - 8, y + barHeight / 2);
+    context.fillStyle = bar.color;
+    context.fillRect(Math.min(x, zeroX), y, Math.max(1, Math.abs(x - zeroX)), barHeight);
   });
 }
 
