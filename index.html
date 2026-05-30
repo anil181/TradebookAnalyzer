@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tradebook Analyzer</title>
+    <link rel="stylesheet" href="./src/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <h1>Tradebook Analyzer</h1>
+          <p>Upload a Zerodha-style equity tradebook and review closed FIFO round trips.</p>
+        </div>
+        <div class="upload-control">
+          <label class="upload-button" for="fileInput">Upload XLSX</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv">
+          <span id="fileName" class="file-name">No file selected</span>
+        </div>
+      </header>
+
+      <section id="status" class="status-line" aria-live="polite">
+        Ready for upload.
+      </section>
+
+      <section id="emptyState" class="empty-state">
+        <div>
+          <h2>Your FIFO dashboard will appear here</h2>
+          <p>Closed trades are matched chronologically using strict first-in, first-out logic for each ticker. Upload the broker tradebook to calculate metrics, charts, insights, and the closed trades table.</p>
+        </div>
+      </section>
+
+      <section id="dashboard" class="dashboard" hidden>
+        <div id="metrics" class="metrics-grid"></div>
+        <ul id="warnings" class="warnings" hidden></ul>
+
+        <section class="charts-grid">
+          <article class="chart-panel wide">
+            <div class="panel-head">
+              <h2>Cumulative Equity Curve</h2>
+              <span>Closed FIFO P/L over time</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="equityChart"></canvas>
+            </div>
+          </article>
+
+          <article class="chart-panel">
+            <div class="panel-head">
+              <h2>P/L By Ticker</h2>
+              <span>Top 12 by closed P/L</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="tickerChart"></canvas>
+            </div>
+          </article>
+
+          <article class="chart-panel">
+            <div class="panel-head">
+              <h2>Win/Loss Distribution</h2>
+              <span>Net P/L buckets</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="histogramChart"></canvas>
+            </div>
+          </article>
+        </section>
+
+        <section class="coach-panel">
+          <h2 id="coachHeadline">Trading Coach</h2>
+          <ul id="coachList"></ul>
+        </section>
+
+        <section class="table-panel">
+          <div class="panel-head table-head">
+            <div>
+              <h2>Closed FIFO Round Trips</h2>
+              <span id="tableCount">0 grouped trades</span>
+            </div>
+            <div class="table-tools">
+              <label class="ticker-search">
+                <span>Ticker</span>
+                <input id="tickerSearch" type="search" list="tickerOptions" placeholder="Search ticker">
+                <datalist id="tickerOptions"></datalist>
+              </label>
+              <button id="clearTicker" class="clear-button" type="button" disabled>Clear</button>
+            </div>
+          </div>
+          <div id="filterSummary" class="filter-summary">0 grouped date-level trades</div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th><button data-sort="symbol" type="button">Ticker</button></th>
+                  <th><button data-sort="buyDate" type="button">Buy Date</button></th>
+                  <th><button data-sort="sellDate" type="button">Sell Date</button></th>
+                  <th class="numeric"><button data-sort="quantity" type="button">Qty</button></th>
+                  <th class="numeric"><button data-sort="buyPrice" type="button">Avg Buy</button></th>
+                  <th class="numeric"><button data-sort="sellPrice" type="button">Avg Sell</button></th>
+                  <th class="numeric"><button data-sort="holdDays" type="button">Hold Days</button></th>
+                  <th class="numeric"><button data-sort="roi" type="button">ROI</button></th>
+                  <th class="numeric"><button data-sort="netProfit" type="button">Net Profit</button></th>
+                </tr>
+              </thead>
+              <tbody id="closedTradesBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
